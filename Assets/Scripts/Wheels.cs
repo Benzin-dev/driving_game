@@ -4,6 +4,11 @@ using UnityEngine;
 
 public class Wheels : MonoBehaviour
 {
+    public bool wheelFrontLeft;
+    public bool wheelFrontRight;
+    public bool wheelRearLeft;
+    public bool wheelRearRight;
+
     [Header("Suspention")]
     public float restLenght;
     public float springTravel;
@@ -12,6 +17,8 @@ public class Wheels : MonoBehaviour
 
     [Header("Wheel")]
     public float wheelRadius;
+    public float steerAngle;
+    public float steerTime;
 
     private Rigidbody rb;
     private float minLenght;
@@ -21,6 +28,7 @@ public class Wheels : MonoBehaviour
     private float springForce;
     private float springVelocity;
     private float damperForce;
+    private float wheelAngle;
 
 
     private Vector3 suspentionForce;
@@ -31,6 +39,12 @@ public class Wheels : MonoBehaviour
 
         minLenght = restLenght - springTravel;
         maxLenght = restLenght + springTravel;
+    }
+
+    private void Update()
+    {
+        wheelAngle = Mathf.Lerp(wheelAngle, steerAngle, steerTime * Time.deltaTime);
+        transform.localRotation = Quaternion.Euler(Vector3.up * wheelAngle);
     }
 
     void FixedUpdate()
