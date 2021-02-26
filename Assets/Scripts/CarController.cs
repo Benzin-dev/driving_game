@@ -1,51 +1,88 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CarController : MonoBehaviour
 {
-    public Wheels[] wheels;
+    public WheelCollider wheelColliderFL, wheelColliderFR;
+    public WheelCollider wheelColliderRL, wheelColliderRR;
+    public Transform wheelTransformFL, wheelTransformFR;
+    public Transform wheelTransformRL, wheelTransformRR;
 
-    [Header("Car Parameters")]
-    public float wheelBase;
-    public float rearTrack;
-    public float turnRadius;
+    public float maxSteerAngle = 30f;
+    public float motorForce = 50f;
+    public float maxSpeed = 180f;
 
-    [Header("Input")]
-    public float steerInput;
+    public Text speedLabel;
 
-    private float ackermannAngleLeft;
-    private float ackermannAngleRight;
+    private Rigidbody rb;
+    private float horizontalInput;
+    private float verticalInput;
+    private float steeringAngle;
+    private float speed;
 
 
-    void Update()
+    private void Start()
     {
-        steerInput = Input.GetAxis("Horizontal");
+        rb = GetComponent<Rigidbody>();
+    }
 
-        if (steerInput > 0)
-        {
-            // turn right
-            ackermannAngleLeft = Mathf.Rad2Deg * Mathf.Atan(wheelBase / (turnRadius + (rearTrack / 2))) * steerInput;
-            ackermannAngleRight = Mathf.Rad2Deg * Mathf.Atan(wheelBase / (turnRadius - (rearTrack / 2))) * steerInput;
-        }
-        else if (steerInput < 0)
-        {
-            // turn left
-            ackermannAngleLeft = Mathf.Rad2Deg * Mathf.Atan(wheelBase / (turnRadius - (rearTrack / 2))) * steerInput;
-            ackermannAngleRight = Mathf.Rad2Deg * Mathf.Atan(wheelBase / (turnRadius + (rearTrack / 2))) * steerInput;
-        }
-        else
-        {
-            ackermannAngleLeft = 0f;
-            ackermannAngleRight = 0f;
-        }
+    private void FixedUpdate()
+    {
+        GetInput();
+        Steer();
+        Accelerate();
+        UpdateWheelPoses();
+    }
 
-        foreach (Wheels w in wheels)
-        {
-            if (w.wheelFrontLeft)
-                w.steerAngle = ackermannAngleLeft;
-            if (w.wheelFrontRight)
-                w.steerAngle = ackermannAngleRight;
-        }
+    private void Update()
+    {
+        Speedometer();
+    }
+
+    public void GetInput()
+    {
+        horizontalInput = Input.GetAxis("Horizontal");
+        verticalInput = Input.GetAxis("Vertical");
+    }
+
+    private void Steer()
+    {
+        steeringAngle = maxSteerAngle * horizontalInput;
+        wheelColliderFL.steerAngle = steeringAngle;
+        wheelColliderFR.steerAngle = steeringAngle;
+    }
+
+    private void Accelerate()
+    {
+        wheelColliderFL.motorTorque = verticalInput * motorForce;
+        wheelColliderFR.motorTorque = verticalInput * motorForce;
+    }
+
+    private void UpdateWheelPoses()
+    {
+        UpdateWheelPose(wheelColliderFL, wheelTransformFL);
+        UpdateWheelPose(wheelColliderFR, wheelTransformFR);
+        UpdateWheelPose(wheelColliderRL, wheelTransformRL);
+        UpdateWheelPose(wheelColliderRR, wheelTransformRR);
+    }
+
+    private void UpdateWheelPose(WheelCollider wCollider, Transform wTransform)
+    {
+        Vector3 pos = wTransform.position;
+        Quaternion quat = wTransform.rotation;
+
+        wCollider.GetWorldPose(out pos, out quat);
+
+        wTransform.position = pos;
+        wTransform.rotation = quat;
+    }
+
+    private void Speedometer()
+    {
+        speed = rb.velocity.magnitude * 3.6f;
+        if (speedLabel != null)
+            speedLabel.text = ((int)speed) + " km/h";
     }
 }
